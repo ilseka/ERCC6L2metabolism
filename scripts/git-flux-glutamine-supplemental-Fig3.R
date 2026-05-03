@@ -1,11 +1,11 @@
 # Flux analysis + supplemental figure plots (supplemental table 6 data)
 
-# ==========================================
-# GLUTAMINE TRACER: full plotting script
+
+# GLUTAMINE TRACER
 # Two separate faceted figures:
-#   1) all isotopologues
-#   2) normalized to Glutamine M+5
-# ==========================================
+#  all isotopologues
+#   normalized to Glutamine M+5
+
 
 library(readxl)
 library(dplyr)
@@ -14,16 +14,14 @@ library(stringr)
 library(ggplot2)
 library(scales)
 
-# ==========================================
-# 1. FILE PATH
-# ==========================================
+
 file_path <- "your file path to data in supplemental table 6"
 
 raw <- read_excel(file_path, col_names = FALSE)
 
-# ==========================================
-# 2. CLEAN TWO-ROW HEADER
-# ==========================================
+
+# clean header 
+
 header1 <- as.character(unlist(raw[1, ]))
 header2 <- as.character(unlist(raw[2, ]))
 
@@ -49,9 +47,9 @@ colnames(raw2) <- combined_names2
 
 df <- raw2[-c(1, 2), ]
 
-# ==========================================
-# 3. LONG FORMAT
-# ==========================================
+
+# long format
+
 df_long <- df %>%
   pivot_longer(
     cols = -Metabolite,
@@ -79,9 +77,9 @@ df_long <- df %>%
   ) %>%
   filter(!is.na(Metabolite), Metabolite != "", !is.na(Abundance))
 
-# ==========================================
-# 4. PARSE BASE METABOLITE + ISOTOPOLOGUE
-# ==========================================
+
+# parse metabolite + isotopologue 
+
 df_long <- df_long %>%
   mutate(
     Metabolite_clean = str_squish(Metabolite),
@@ -100,9 +98,9 @@ df_long <- df_long %>%
     BaseMetabolite = str_squish(BaseMetabolite)
   )
 
-# ==========================================
-# 5. STANDARDIZE METABOLITE NAMES
-# ==========================================
+
+# standardize metabolite names
+
 df_long <- df_long %>%
   mutate(
     BaseMetabolite = recode(
@@ -116,9 +114,9 @@ df_long <- df_long %>%
 # Optional check:
 # print(sort(unique(df_long$BaseMetabolite)))
 
-# ==========================================
-# 6. ORDER GROUPS
-# ==========================================
+
+# order groups 
+
 condition_order <- c(
   "Control 30min",
   "ERCC6L2 30min",
@@ -153,9 +151,9 @@ df_long <- df_long %>%
     GroupLabel = factor(GroupLabel, levels = group_order)
   )
 
-# ==========================================
-# 7. ISOTOPOLOGUE ORDER
-# ==========================================
+
+# isotopologues 
+
 iso_levels_all <- df_long %>%
   distinct(Isotopologue, iso_num) %>%
   arrange(iso_num) %>%
@@ -169,9 +167,9 @@ iso_levels_noM0 <- df_long %>%
 
 df_long$Isotopologue <- factor(df_long$Isotopologue, levels = iso_levels_all)
 
-# ==========================================
-# 8. COLOR PALETTES
-# ==========================================
+
+# colors
+
 palette_all <- c(
   "M+0" = "#4E79A7",
   "M+1" = "#A0CBE8",
@@ -192,9 +190,9 @@ palette_noM0 <- c(
 palette_all <- palette_all[names(palette_all) %in% iso_levels_all]
 palette_noM0 <- palette_noM0[names(palette_noM0) %in% iso_levels_noM0]
 
-# ==========================================
-# 9. NORMALIZED TO GLUTAMINE M+5
-# ==========================================
+
+#  normalize to gluitamine M+5
+
 glutamine_m5 <- df_long %>%
   filter(BaseMetabolite == "Glutamine", Isotopologue == "M+5") %>%
   select(ConditionTime, GroupLabel, SampleID, Glutamine_M5 = Abundance)
@@ -209,9 +207,9 @@ df_gln_norm <- df_long %>%
 
 df_gln_norm$Isotopologue <- factor(df_gln_norm$Isotopologue, levels = iso_levels_noM0)
 
-# ==========================================
-# 10. SUMMARIZE
-# ==========================================
+
+# summary plots
+
 plot_df_abundance <- df_long %>%
   group_by(BaseMetabolite, GroupLabel, Isotopologue) %>%
   summarise(
@@ -226,9 +224,6 @@ plot_df_gln_norm <- df_gln_norm %>%
     .groups = "drop"
   )
 
-# ==========================================
-# 11. SET METABOLITE ORDER
-# ==========================================
 metabolite_order <- c(
   "Glutamine",
   "Glutamate",
@@ -258,13 +253,8 @@ plot_df_gln_norm <- plot_df_gln_norm %>%
     Isotopologue = factor(Isotopologue, levels = iso_levels_noM0)
   )
 
-# Optional diagnostics:
-# print(setdiff(metabolite_order, unique(as.character(plot_df_abundance$BaseMetabolite))))
-# print(setdiff(unique(as.character(plot_df_abundance$BaseMetabolite)), metabolite_order))
+# plot all isotopolgues
 
-# ==========================================
-# 12. FIGURE 1: ALL ISOTOPES
-# ==========================================
 p_all_isotopes <- ggplot(
   plot_df_abundance,
   aes(x = GroupLabel, y = MeanAbundance, fill = Isotopologue)
@@ -296,9 +286,8 @@ p_all_isotopes <- ggplot(
 
 print(p_all_isotopes)
 
-# ==========================================
-# 13. FIGURE 2: NORMALIZED TO GLUTAMINE M+5
-# ==========================================
+# plot normlaized to glutamine +5
+
 p_norm_gln_m5 <- ggplot(
   plot_df_gln_norm,
   aes(x = GroupLabel, y = MeanNorm, fill = Isotopologue)
